@@ -29,6 +29,18 @@ function initVideoShader(opts) {
   var gVideoTextureLoadDone = false;
   var gVideoIsPlaying = false;
 
+  var canAnimate = false;
+
+  function startAnimate(st) {
+    canAnimate = st;
+    if (st) {
+      animate();
+      video.play();
+    } else {
+      video.pause();
+    }
+  }
+
   function show() {
     if(!gVideoIsPlaying) {
       gVideoIsPlaying = true;
@@ -42,6 +54,7 @@ function initVideoShader(opts) {
     }
     badTVParams.show = rgbParams.show = true;
     onToggleShaders();
+    startAnimate(true);
 
     if(opts.effectsAutoOff) {    
       setTimeout(function() {
@@ -58,6 +71,7 @@ function initVideoShader(opts) {
     setTimeout(function() {
       badTVParams.show = rgbParams.show = false;
       onToggleShaders();
+      startAnimate(false);
       $(opts.videoContainerSelector).hide();
     }, 150);
   }
@@ -83,6 +97,12 @@ function initVideoShader(opts) {
 
   document.addEventListener("DOMContentLoaded", function() {
     preloadVideo();
+
+    if(!gVideoTextureLoadDone) {
+      gVideoTextureLoadDone = true;
+      videoTextureOnLoad();
+    }
+
   });
 
   function preloadVideo() {
@@ -266,23 +286,23 @@ function initVideoShader(opts) {
   }
 
   function animate() {
-    shaderTime += 0.1;
-    badTVPass.uniforms[ 'time' ].value =  shaderTime;
-    filmPass.uniforms[ 'time' ].value =  shaderTime;
-    staticPass.uniforms[ 'time' ].value =  shaderTime;
+    if (canAnimate) {
+      // console.log(VIDEO_SRC, 'animating');
 
-    if ( video.readyState === video.HAVE_ENOUGH_DATA ) {
-      if ( videoTexture ) {
-        videoTexture.needsUpdate = true;
-        if(!gVideoTextureLoadDone) {
-          gVideoTextureLoadDone = true;
-          videoTextureOnLoad();
+      shaderTime += 0.1;
+      badTVPass.uniforms[ 'time' ].value =  shaderTime;
+      filmPass.uniforms[ 'time' ].value =  shaderTime;
+      staticPass.uniforms[ 'time' ].value =  shaderTime;
+
+      if ( video.readyState === video.HAVE_ENOUGH_DATA ) {
+        if ( videoTexture ) {
+          videoTexture.needsUpdate = true;
         }
       }
-    }
 
-    requestAnimationFrame( animate );
-    composer.render(0.1);
+      requestAnimationFrame( animate );
+      composer.render(0.1);
+    }
   }
 
   function onResize() {
